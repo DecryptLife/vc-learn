@@ -6,6 +6,16 @@ import peer from "../service/peer";
 
 import { useSocket } from "../context/SocketProvider";
 
+interface IncomingCallProps {
+  from: string;
+  offer: RTCSessionDescriptionInit;
+}
+
+interface CallAcceptedProps {
+  from: string;
+  ans: RTCSessionDescriptionInit;
+}
+
 const RoomScreen = () => {
   const [remoteID, setRemoteID] = useState<string>("");
   const [myStream, setMyStream] = useState<MediaStream | null>(null);
@@ -23,13 +33,33 @@ const RoomScreen = () => {
 
     console.log(`${email} joined the room`);
   }, []);
+
+  const handleIncomingCall = useCallback(
+    async ({ from, offer }: IncomingCallProps) => {
+      console.log("incoming call", from, offer);
+      const stream: MediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+
+      setMyStream(stream);
+      const ans: RTCSessionDescriptionInit | undefined = await peer.getAnswer(
+        offer
+      );
+
+      socket?.emit("call:accepted", { to: from, ans });
+    },
+    [socket]
+  );
   useEffect(() => {
     socket?.on("user:joined", handleUserJoined);
+    socket?.on("incoming:call", handleIncomingCall);
 
     return () => {
       socket?.off("user:joined", handleUserJoined);
+      socket?.off("incoming:call", handleIncomingCall);
     };
-  }, [socket, handleUserJoined]);
+  }, [socket, handleUserJoined, handleIncomingCall]);
 
   const handleCallUser = useCallback(async () => {
     const stream: MediaStream = await navigator.mediaDevices.getUserMedia({
