@@ -1,6 +1,9 @@
 // @ts-check
 import React, { useCallback, useEffect, useState } from "react";
 import ReactPlayer from "react-player";
+
+import peer from "../service/peer";
+
 import { useSocket } from "../context/SocketProvider";
 
 const RoomScreen = () => {
@@ -12,6 +15,11 @@ const RoomScreen = () => {
     const { email, id } = data;
 
     setRemoteID(id);
+
+    const offer: Promise<RTCSessionDescriptionInit | undefined> =
+      peer.getOffer();
+
+    socket?.emit("user:call", { to: remoteID, offer });
 
     console.log(`${email} joined the room`);
   }, []);
@@ -30,20 +38,23 @@ const RoomScreen = () => {
     });
 
     setMyStream(stream);
-  }, []);
+  }, [myStream]);
   return (
     <div>
       <h1>Room Screen</h1>
       <h4>{remoteID ? "Connected" : "No one in room"}</h4>
       {remoteID && <button onClick={handleCallUser}>CALL</button>}
       {myStream && (
-        <ReactPlayer
-          playing
-          muted
-          height="300px"
-          width="500px"
-          url={myStream}
-        />
+        <>
+          <h1>My Stream</h1>
+          <ReactPlayer
+            playing
+            muted
+            height="300px"
+            width="500px"
+            url={myStream}
+          />
+        </>
       )}
     </div>
   );
