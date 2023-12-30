@@ -24,3 +24,5 @@ class PeerService {
     return offer;
   }
 }
+
+export default new PeerService();
