@@ -37,6 +37,7 @@ const RoomScreen = () => {
   const handleIncomingCall = useCallback(
     async ({ from, offer }: IncomingCallProps) => {
       console.log("incoming call", from, offer);
+      setRemoteID(from);
       const stream: MediaStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
         video: true,
@@ -51,15 +52,22 @@ const RoomScreen = () => {
     },
     [socket]
   );
+
+  const handleCallAccepted = useCallback(({ from, ans }: CallAcceptedProps) => {
+    peer.setLocalDescription(ans);
+    console.log("Call accepted");
+  }, []);
   useEffect(() => {
     socket?.on("user:joined", handleUserJoined);
     socket?.on("incoming:call", handleIncomingCall);
+    socket?.on("call:accepted", handleCallAccepted);
 
     return () => {
       socket?.off("user:joined", handleUserJoined);
       socket?.off("incoming:call", handleIncomingCall);
+      socket?.off("call:accepted", handleCallAccepted);
     };
-  }, [socket, handleUserJoined, handleIncomingCall]);
+  }, [socket, handleUserJoined, handleIncomingCall, handleCallAccepted]);
 
   const handleCallUser = useCallback(async () => {
     const stream: MediaStream = await navigator.mediaDevices.getUserMedia({
