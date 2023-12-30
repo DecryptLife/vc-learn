@@ -21,16 +21,32 @@ class PeerService {
   async getAnswer(
     offer: RTCSessionDescriptionInit
   ): Promise<RTCSessionDescriptionInit | undefined> {
-    await this.peer?.setRemoteDescription(offer);
-    const ans = await this.peer?.createAnswer();
-    await this.peer?.setLocalDescription(ans);
+    // fels like it might need new RTCSessionDescription
+    if (this.peer) {
+      try {
+        await this.peer?.setRemoteDescription(offer);
+        const ans = await this.peer?.createAnswer();
+        await this.peer?.setLocalDescription(new RTCSessionDescription(ans));
 
-    return ans;
+        return ans;
+      } catch (error) {
+        console.error("Error creating offer ", error);
+      }
+    }
+
+    return undefined;
   }
+
   async getOffer(): Promise<RTCSessionDescriptionInit | undefined> {
     const offer = await this.peer?.createOffer();
     await this.peer?.setLocalDescription(offer);
     return offer;
+  }
+
+  async setLocalDescription(ans: RTCSessionDescriptionInit) {
+    if (this.peer) {
+      await this.peer.setRemoteDescription(new RTCSessionDescription(ans));
+    }
   }
 }
 
