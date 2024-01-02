@@ -82,6 +82,9 @@ const RoomScreen = () => {
     [socket]
   );
 
+  const handleNegoNeedFinal = useCallback(async ({ ans }) => {
+    await peer.setLocalDescription(ans);
+  }, []);
   useEffect(() => {
     peer.peer?.addEventListener("negotiationneeded", handleNegoNeeded);
 
@@ -102,6 +105,7 @@ const RoomScreen = () => {
     socket?.on("incoming:call", handleIncomingCall);
     socket?.on("call:accepted", handleCallAccepted);
     socket?.on("peer:nego:needed", handleNegoNeedIncoming);
+    socket?.on("peer:nego:final", handleNegoNeedFinal);
 
     return () => {
       socket?.off("user:joined", handleUserJoined);
@@ -122,6 +126,7 @@ const RoomScreen = () => {
     <div>
       <h1>Room Screen</h1>
       <h4>{remoteID ? "Connected" : "No one in room"}</h4>
+      {myStream && <button> Join Call</button>}
       {remoteID && <button onClick={handleCallUser}>CALL</button>}
       {myStream && (
         <>
