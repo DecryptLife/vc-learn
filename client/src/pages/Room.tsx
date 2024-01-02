@@ -68,6 +68,14 @@ const RoomScreen = () => {
   );
 
   useEffect(() => {
+    peer.peer?.addEventListener("negotiationneeded", async () => {
+      const offer = await peer.getOffer();
+
+      socket?.emit("peer:nego:needed", { to: remoteID, offer });
+    });
+  }, []);
+
+  useEffect(() => {
     peer.peer?.addEventListener("track", async (ev) => {
       const remoteStream = ev.streams;
       setRemoteStream(remoteStream);
