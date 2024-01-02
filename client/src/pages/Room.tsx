@@ -73,6 +73,15 @@ const RoomScreen = () => {
     socket?.emit("peer:nego:needed", { to: remoteID, offer });
   }, [remoteID, socket]);
 
+  const handleNegoNeedIncoming = useCallback(
+    async ({ from, offer }) => {
+      const ans = await peer.getAnswer(offer);
+
+      socket?.emit("peer:nego:done", { to: from, ans });
+    },
+    [socket]
+  );
+
   useEffect(() => {
     peer.peer?.addEventListener("negotiationneeded", handleNegoNeeded);
 
@@ -87,10 +96,12 @@ const RoomScreen = () => {
       setRemoteStream(remoteStream);
     });
   }, [remoteStream]);
+
   useEffect(() => {
     socket?.on("user:joined", handleUserJoined);
     socket?.on("incoming:call", handleIncomingCall);
     socket?.on("call:accepted", handleCallAccepted);
+    socket?.on("peer:nego:needed", handleNegoNeedIncoming);
 
     return () => {
       socket?.off("user:joined", handleUserJoined);
