@@ -50,19 +50,22 @@ const RoomScreen = () => {
         offer
       );
 
-      socket?.emit("call:accepted", { to: from, ans });
+      if (socket && from) {
+        socket?.emit("call:accepted", { to: from, ans });
+      }
     },
     [socket]
   );
 
   const sendStreams = useCallback(() => {
-    for (const track in myStream?.getTracks()) {
-      peer.peer?.addTrack(track, myStream);
+    for (const track in myStream?.getTracks() ?? []) {
+      peer.peer?.addTrack(track, myStream ?? undefined);
     }
   }, [myStream]);
+
   const handleCallAccepted = useCallback(
-    ({ from, ans }: CallAcceptedProps) => {
-      peer.setLocalDescription(ans);
+    async ({ ans }: CallAcceptedProps) => {
+      await peer.setLocalDescription(ans);
       console.log("Call accepted");
       sendStreams();
     },
@@ -72,11 +75,11 @@ const RoomScreen = () => {
   const handleNegoNeeded = useCallback(async () => {
     const offer = await peer.getOffer();
 
-    socket?.emit("peer:nego:needed", { to: remoteID, offer });
+    socket?.emit("peer:nego:needed", { offer, to: remoteID });
   }, [remoteID, socket]);
 
   const handleNegoNeedIncoming = useCallback(
-    async ({ from, offer }) => {
+    async ({ from, offer }: IncomingCallProps) => {
       const ans = await peer.getAnswer(offer);
 
       socket?.emit("peer:nego:done", { to: from, ans });
@@ -97,9 +100,16 @@ const RoomScreen = () => {
 
   useEffect(() => {
     peer.peer?.addEventListener("track", async (ev) => {
-      const remoteStream = ev.streams;
-      setRemoteStream(remoteStream[0]);
+      const _remoteStream = ev.streams;
+      setRemoteStream(_remoteStream[0]);
     });
+
+    return () => {
+      peer.peer?.removeEventListener("track", async (ev) => {
+        const _remoteStream = ev.streams;
+        setRemoteStream(_remoteStream[0]);
+      });
+    };
   }, [remoteStream]);
 
   useEffect(() => {
@@ -116,7 +126,14 @@ const RoomScreen = () => {
       socket?.off("peer:nego:needed", handleNegoNeedIncoming);
       socket?.off("peer:nego:final", handleNegoNeedFinal);
     };
-  }, [socket, handleUserJoined, handleIncomingCall, handleCallAccepted]);
+  }, [
+    socket,
+    handleUserJoined,
+    handleIncomingCall,
+    handleCallAccepted,
+    handleNegoNeedIncoming,
+    handleNegoNeedFinal,
+  ]);
 
   const handleCallUser = useCallback(async () => {
     const stream: MediaStream = await navigator.mediaDevices.getUserMedia({
@@ -130,7 +147,7 @@ const RoomScreen = () => {
     <div>
       <h1>Room Screen</h1>
       <h4>{remoteID ? "Connected" : "No one in room"}</h4>
-      {myStream && <button onClick={handleSendStream}> Send Stream</button>}
+      {myStream && <button onClick={sendStreams}> Send Stream</button>}
       {remoteID && <button onClick={handleCallUser}>CALL</button>}
       {myStream && (
         <>
