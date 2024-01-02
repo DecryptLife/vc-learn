@@ -113,6 +113,8 @@ const RoomScreen = () => {
       socket?.off("user:joined", handleUserJoined);
       socket?.off("incoming:call", handleIncomingCall);
       socket?.off("call:accepted", handleCallAccepted);
+      socket?.off("peer:nego:needed", handleNegoNeedIncoming);
+      socket?.off("peer:nego:final", handleNegoNeedFinal);
     };
   }, [socket, handleUserJoined, handleIncomingCall, handleCallAccepted]);
 
