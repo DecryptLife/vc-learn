@@ -19,7 +19,7 @@ interface CallAcceptedProps {
 const RoomScreen = () => {
   const [remoteID, setRemoteID] = useState<string>("");
   const [myStream, setMyStream] = useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = useState<MediaStream[] | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
   const socket = useSocket();
 
@@ -55,16 +55,18 @@ const RoomScreen = () => {
     [socket]
   );
 
+  const sendStreams = useCallback(() => {
+    for (const track in myStream?.getTracks()) {
+      peer.peer?.addTrack(track, myStream);
+    }
+  }, [myStream]);
   const handleCallAccepted = useCallback(
     ({ from, ans }: CallAcceptedProps) => {
       peer.setLocalDescription(ans);
       console.log("Call accepted");
-
-      for (const track in myStream?.getTracks()) {
-        peer.peer?.addTrack(track, myStream);
-      }
+      sendStreams();
     },
-    [myStream]
+    [sendStreams]
   );
 
   const handleNegoNeeded = useCallback(async () => {
@@ -96,7 +98,7 @@ const RoomScreen = () => {
   useEffect(() => {
     peer.peer?.addEventListener("track", async (ev) => {
       const remoteStream = ev.streams;
-      setRemoteStream(remoteStream);
+      setRemoteStream(remoteStream[0]);
     });
   }, [remoteStream]);
 
@@ -126,7 +128,7 @@ const RoomScreen = () => {
     <div>
       <h1>Room Screen</h1>
       <h4>{remoteID ? "Connected" : "No one in room"}</h4>
-      {myStream && <button> Join Call</button>}
+      {myStream && <button onClick={handleSendStream}> Send Stream</button>}
       {remoteID && <button onClick={handleCallUser}>CALL</button>}
       {myStream && (
         <>
