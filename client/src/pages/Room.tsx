@@ -19,6 +19,8 @@ interface CallAcceptedProps {
 const RoomScreen = () => {
   const [remoteID, setRemoteID] = useState<string>("");
   const [myStream, setMyStream] = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream] = useState<MediaStream[] | null>(null);
+
   const socket = useSocket();
 
   const handleUserJoined = useCallback((data: any) => {
@@ -53,10 +55,24 @@ const RoomScreen = () => {
     [socket]
   );
 
-  const handleCallAccepted = useCallback(({ from, ans }: CallAcceptedProps) => {
-    peer.setLocalDescription(ans);
-    console.log("Call accepted");
-  }, []);
+  const handleCallAccepted = useCallback(
+    ({ from, ans }: CallAcceptedProps) => {
+      peer.setLocalDescription(ans);
+      console.log("Call accepted");
+
+      for (const track in myStream?.getTracks()) {
+        peer.peer?.addTrack(track, myStream);
+      }
+    },
+    [myStream]
+  );
+
+  useEffect(() => {
+    peer.peer?.addEventListener("track", async (ev) => {
+      const remoteStream = ev.streams;
+      setRemoteStream(remoteStream);
+    });
+  }, [remoteStream]);
   useEffect(() => {
     socket?.on("user:joined", handleUserJoined);
     socket?.on("incoming:call", handleIncomingCall);
@@ -91,6 +107,19 @@ const RoomScreen = () => {
             height="300px"
             width="500px"
             url={myStream}
+          />
+        </>
+      )}
+
+      {remoteStream && (
+        <>
+          <h1>Remote Stream</h1>
+          <ReactPlayer
+            playing
+            muted
+            height="300px"
+            width="500px"
+            url={remoteStream}
           />
         </>
       )}
