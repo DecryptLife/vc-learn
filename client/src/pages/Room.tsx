@@ -1,5 +1,5 @@
 // @ts-check
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 
 import peer from "../service/peer";
